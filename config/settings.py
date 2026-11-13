@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'common.apps.CommonConfig',
+    'chamas.apps.ChamasConfig',
     'utils.apps.UtilsConfig',
     'base.apps.BaseConfig',
     'rest_framework',
@@ -47,14 +48,16 @@ INSTALLED_APPS = [
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication'
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated'
+        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
 
     "COERCE_DECIMAL_TO_STRING": True,
+
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
 }
 
 AUTH_USER_MODEL = "accounts.User"
