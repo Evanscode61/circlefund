@@ -3,6 +3,7 @@ djangorestframework
 djangorestframework-simplejwt
 django-environ
 django-filter
+Pillow
 psycopg[binary]
 celery[redis]
 redis
