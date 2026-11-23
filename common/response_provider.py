@@ -49,7 +49,7 @@ class APIResponse:
 
     @staticmethod
     def too_many_requests(message="Too many requests received"):
-        return APIRespose._build(False, message, None, status.HTTP_429_TOO_MANY_REQUESTS)
+        return APIResponse._build(False, message, None, status.HTTP_429_TOO_MANY_REQUESTS)
 
     @staticmethod
     def server_error(message="An unexpected error occurred. Please try again later"):
