@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'common.apps.CommonConfig',
+    'chamas.apps.ChamasConfig',
     'utils.apps.UtilsConfig',
     'base.apps.BaseConfig',
     'rest_framework',
@@ -52,6 +53,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
 
     "COERCE_DECIMAL_TO_STRING": True,
+
+    "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
 }
 
 AUTH_USER_MODEL = "accounts.User"

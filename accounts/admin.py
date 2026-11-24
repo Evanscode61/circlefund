@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-
-from .models import User
+from .models import Permission, Role,User
 
 
 @admin.register(User)
@@ -28,3 +27,17 @@ class CustomUserAdmin(UserAdmin):
             "phone", "first_name", "last_name", "email", "date_of_birth", "gender", "profile_photo",
         )}),
     )
+
+
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ("code", "description")
+    search_fields = ("code", "description")
+
+
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ("name", "group")
+    list_filter = ("group",)
+    search_fields = ("name", "group__name")
+    filter_horizontal = ("permissions",)
