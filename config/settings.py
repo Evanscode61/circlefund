@@ -51,10 +51,20 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    "DEFAULT_THROTTLE_RATES": {
+        "registration": env("REGISTRATION_THROTTLE_RATE", default="5/hour"),
+    },
+    "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=None),
 
     "COERCE_DECIMAL_TO_STRING": True,
 
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
+}
+
+CACHES = {
+    "default": env.cache(
+        "DJANGO_CACHE_URL", default="locmemcache://circlefund",
+    ),
 }
 
 AUTH_USER_MODEL = "accounts.User"

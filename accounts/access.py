@@ -37,7 +37,7 @@ DEFAULT_ROLES = {
 
 
 @transaction.atomic
-def create_default_roles(group):
+def create_default_roles(group) -> dict[str, Role]:
     """Give a new group its own copy of the default roles. Returns {name: Role}."""
     perms = {}
     for code, description in PERMISSIONS.items():
@@ -52,7 +52,7 @@ def create_default_roles(group):
     return roles
 
 
-def has_permission(membership, code):
+def has_permission(membership, code) -> bool:
     """True if this membership is active and its role grants `code`."""
     if code not in PERMISSIONS:
         raise ValueError(f"Unknown permission: {code}")  # catches typos in views

@@ -23,16 +23,16 @@ class User(BaseModel, AbstractUser):
 
     REQUIRED_FIELDS = [ "phone","national_id"]
 
-    def set_pin(self, raw_pin):
+    def set_pin(self, raw_pin) -> None:
         """Hash a four- to six-digit PIN. Call save() to persist it."""
         if not isinstance(raw_pin, str) or re.fullmatch(r"[0-9]{4,6}", raw_pin) is None:
             raise ValidationError("Enter a PIN with four to six digits.")
         self.pin_hash = make_password(raw_pin)
 
-    def check_pin(self, raw_pin):
+    def check_pin(self, raw_pin) -> bool:
         return isinstance(raw_pin, str) and check_password(raw_pin, self.pin_hash)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         self.phone = normalize_phone_number(self.phone) or self.phone
         self.email = normalize_email(self.email) or None
         super().save(*args, **kwargs)
@@ -41,7 +41,7 @@ class Permission(BaseModel):
     code = models.CharField(max_length=60, unique=True)  # e.g. "loans.approve"
     description = models.CharField(max_length=200)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.code
 
 
@@ -54,5 +54,5 @@ class Role(GenericBaseModel):  # gives id, name, description, date_created, upda
             models.UniqueConstraint(fields=["group", "name"], name="unique_role_name_per_group"),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.group})"

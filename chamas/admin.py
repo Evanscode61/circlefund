@@ -15,7 +15,7 @@ class GroupAdmin(admin.ModelAdmin):
     readonly_fields = ("slug", "created_by", "member_number_seq", "date_created", "updated_at")
     list_select_related = ("created_by",)
 
-    def save_model(self, request, obj, form, change):
+    def save_model(self, request, obj, form, change) -> None:
         if not change:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
@@ -30,7 +30,7 @@ class MembershipAdmin(admin.ModelAdmin):
     readonly_fields = ("member_number", "date_created", "updated_at")
     list_select_related = ("user", "group", "role")
 
-    def save_model(self, request, obj, form, change):
+    def save_model(self, request, obj, form, change) -> None:
         if not obj.member_number:
             obj.member_number = obj.group.next_member_number()
         super().save_model(request, obj, form, change)

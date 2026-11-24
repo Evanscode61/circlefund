@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 from .response_provider import APIResponse
@@ -10,7 +11,7 @@ from .response_provider import APIResponse
 lgr = logging.getLogger(__name__)
 
 
-def custom_exception_handler(exc, context):
+def custom_exception_handler(exc, context) -> Response | None:
     if isinstance(exc, DjangoValidationError):
         detail = exc.message_dict if hasattr(exc, "error_dict") else exc.messages
         exc = ValidationError(detail)
@@ -39,7 +40,10 @@ def custom_exception_handler(exc, context):
     if code == 404:
         return APIResponse.not_found(str(detail) if detail else "Resource not found")
     if code == 429:
-        return APIResponse.too_many_requests(str(detail) if detail else "Too many requests")
+        new = APIResponse.too_many_requests(str(detail) if detail else "Too many requests")
+        if "Retry-After" in response:
+            new["Retry-After"] = response["Retry-After"]
+        return new
     if code ==500:
         return APIResponse.server_error(detail if detail else "Internal server error")
     return response

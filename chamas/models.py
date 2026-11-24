@@ -56,10 +56,10 @@ class Group(GenericBaseModel):  # gives id, name, description, date_created, upd
             ),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         if not self.slug:
             base = slugify(self.name)[:150] or "group"
             slug, n = base, 2
@@ -71,7 +71,7 @@ class Group(GenericBaseModel):  # gives id, name, description, date_created, upd
         super().save(*args, **kwargs)
 
     @transaction.atomic
-    def next_member_number(self):
+    def next_member_number(self) -> str:
         """Lock this group's row so two simultaneous joins can't get the same number."""
         locked = Group.objects.select_for_update().get(pk=self.pk)
         locked.member_number_seq += 1
@@ -117,5 +117,5 @@ class Membership(BaseModel):
             models.Index(fields=["user", "status"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user} - {self.group}"

@@ -29,12 +29,12 @@ class GroupSerializer(serializers.ModelSerializer):
             "phone_number": {"validators": [validate_phone]},
         }
 
-    def validate_currency(self, value):
+    def validate_currency(self, value) -> str:
         if value not in SUPPORTED_CURRENCIES:
             raise serializers.ValidationError(f"Supported currencies: {', '.join(SUPPORTED_CURRENCIES)}.")
         return value
 
-    def validate_registration_number(self, value):
+    def validate_registration_number(self, value) -> str:
         if value and Group.objects.filter(registration_number=value).exists():
             raise serializers.ValidationError("A group with this registration number already exists.")
         return value

@@ -4,53 +4,53 @@ from rest_framework.response import Response
 
 class APIResponse:
     @staticmethod
-    def _build(ok, message, payload, http_status):
+    def _build(ok, message, payload, http_status) -> Response:
         body = {"status": "success" if ok else "error", "message": message}
         body["data" if ok else "errors"] = {} if payload is None else payload
         return Response(body, status=http_status)
 
     # ---- success ----
     @staticmethod
-    def success(message, data=None, http_status=status.HTTP_200_OK):
+    def success(message, data=None, http_status=status.HTTP_200_OK) -> Response:
         return APIResponse._build(True, message, data, http_status)
 
     @staticmethod
-    def created(message, data=None):
+    def created(message, data=None) -> Response:
         return APIResponse._build(True, message, data, status.HTTP_201_CREATED)
 
     @staticmethod
-    def deleted(message="Deleted successfully"):
+    def deleted(message="Deleted successfully") -> Response:
         return APIResponse._build(True, message, None, status.HTTP_200_OK)
 
     # ---- errors ----
     @staticmethod
-    def bad_request(message, errors=None):
+    def bad_request(message, errors=None) -> Response:
         return APIResponse._build(False, message, errors, status.HTTP_400_BAD_REQUEST)
 
     @staticmethod
-    def unauthorized(message="Authentication required"):
+    def unauthorized(message="Authentication required") -> Response:
         return APIResponse._build(False, message, None, status.HTTP_401_UNAUTHORIZED)
 
     @staticmethod
-    def forbidden(message="You do not have permission to perform this action"):
+    def forbidden(message="You do not have permission to perform this action") -> Response:
         return APIResponse._build(False, message, None, status.HTTP_403_FORBIDDEN)
 
     @staticmethod
-    def not_found(message="Resource not found"):
+    def not_found(message="Resource not found") -> Response:
         return APIResponse._build(False, message, None, status.HTTP_404_NOT_FOUND)
 
     @staticmethod
-    def conflict(message, errors=None):
+    def conflict(message, errors=None) -> Response:
         return APIResponse._build(False, message, errors, status.HTTP_409_CONFLICT)
 
     @staticmethod
-    def unprocessable(message, errors=None):
+    def unprocessable(message, errors=None) -> Response:
         return APIResponse._build(False, message, errors, status.HTTP_422_UNPROCESSABLE_ENTITY)
 
     @staticmethod
-    def too_many_requests(message="Too many requests received"):
+    def too_many_requests(message="Too many requests received") -> Response:
         return APIResponse._build(False, message, None, status.HTTP_429_TOO_MANY_REQUESTS)
 
     @staticmethod
-    def server_error(message="An unexpected error occurred. Please try again later"):
+    def server_error(message="An unexpected error occurred. Please try again later") -> Response:
         return APIResponse._build(False, message, None, status.HTTP_500_INTERNAL_SERVER_ERROR)

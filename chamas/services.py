@@ -8,7 +8,7 @@ from .models import Group, Membership
 
 
 @transaction.atomic
-def create_group(*, user, name, group_type, **extra):
+def create_group(*, user, name, group_type, **extra) -> Group:
     """Create a group in SETUP with its default roles and the creator as active Owner."""
     group = Group.objects.create(created_by=user, name=name, group_type=group_type, **extra)
     roles = create_default_roles(group)
@@ -23,7 +23,7 @@ def create_group(*, user, name, group_type, **extra):
     return group
 
 @transaction.atomic
-def assign_role(membership, role):
+def assign_role(membership, role) -> Membership:
     """Give a member a role, but only one that belongs to the same group."""
     if role.group_id != membership.group_id:
         raise ValidationError("This role belongs to a different group.")

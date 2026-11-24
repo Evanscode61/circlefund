@@ -4,6 +4,7 @@ djangorestframework-simplejwt
 django-environ
 django-filter
 Pillow
+phonenumbers
 psycopg[binary]
 celery[redis]
 redis
