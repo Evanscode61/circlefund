@@ -1,14 +1,41 @@
 from uuid import uuid4
 
+from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.http import HttpRequest
+from rest_framework.request import Request
+from rest_framework_simplejwt.settings import api_settings as jwt_settings
 
 from common.validators import normalize_email
 
 from .models import User
+from .ratelimit import LoginAccountThrottle
 
 
 class AccountService:
+    @staticmethod
+    def authenticate_user(
+        *, request: HttpRequest | Request, password: str, email: str | None = None,
+        username: str | None = None,
+    ) -> User | None:
+        email = normalize_email(email)
+        lookup = {"email__iexact": email} if email else {"username": username}
+        try:
+            user = User.objects.get(**lookup)
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
+            user = None
+        account_email = normalize_email(user.email) if user else email
+        identifier = f"email:{account_email}" if account_email else f"username:{username}"
+        LoginAccountThrottle().check(identifier)
+        if user is None:
+            User().set_password(password)
+            return None
+        authenticated = authenticate(request=request, username=user.get_username(), password=password)
+        if authenticated and authenticated.is_active and jwt_settings.USER_AUTHENTICATION_RULE(authenticated):
+            return authenticated
+        return None
+
     @classmethod
     def register_user(
         cls, *, first_name: str, last_name: str, email: str, phone: str, password: str,

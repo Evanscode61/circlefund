@@ -1,8 +1,6 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from common.validators import normalize_email, validate_international_phone
 
@@ -64,26 +62,26 @@ class RegisteredUserSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class AccountTokenSerializer(TokenObtainPairSerializer):
-    email = serializers.EmailField(max_length=254, write_only=True, required=False)
+class LoginSerializer(serializers.Serializer):
+    id = serializers.UUIDField(read_only=True)
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
+    email = serializers.EmailField(max_length=254)
+    email_verified = serializers.BooleanField(source="is_email_verified", read_only=True)
+    password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=4096,
+        style={"input_type": "password"},
+    )
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.fields[self.username_field].required = False
-        self.fields["password"].trim_whitespace = False
+    def validate_email(self, value: str) -> str:
+        return normalize_email(value)
+
+
+class AccountTokenSerializer(LoginSerializer):
+    email = serializers.EmailField(max_length=254, write_only=True, required=False)
+    username = serializers.CharField(max_length=150, write_only=True, required=False)
 
     def validate(self, attrs) -> dict[str, str]:
-        email = attrs.get("email")
-        if email:
-            try:
-                user = User.objects.get(email__iexact=normalize_email(email))
-            except (User.DoesNotExist, User.MultipleObjectsReturned):
-                # Match the password hashing work Django performs for unknown usernames.
-                User().set_password(attrs["password"])
-                raise AuthenticationFailed(
-                    self.error_messages["no_active_account"], "no_active_account",
-                ) from None
-            attrs[self.username_field] = user.get_username()
-        elif self.username_field not in attrs:
+        if "email" not in attrs and "username" not in attrs:
             raise serializers.ValidationError({"email": "Enter your email address."})
-        return super().validate(attrs)
+        return attrs

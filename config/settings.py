@@ -53,6 +53,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     "DEFAULT_THROTTLE_RATES": {
         "registration": env("REGISTRATION_THROTTLE_RATE", default="5/hour"),
+        "login": env("LOGIN_IP_THROTTLE_RATE", default="30/min"),
+        "login_account": env("LOGIN_ACCOUNT_THROTTLE_RATE", default="10/min"),
     },
     "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=None),
 
