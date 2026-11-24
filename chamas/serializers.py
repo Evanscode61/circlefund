@@ -1,11 +1,19 @@
 from rest_framework import serializers
 
 from common.validators import validate_phone
+from .models import Group, Membership
 
 from .models import Group
 
-SUPPORTED_CURRENCIES = ["KES"]  # add more when the ledger supports them
+SUPPORTED_CURRENCIES = ["KES"]
 
+# add more when the ledger supports them
+class MembershipSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source="role.name", read_only=True)
+
+    class Meta:
+        model = Membership
+        fields = ["member_number", "role", "status", "joined_at"]
 
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:

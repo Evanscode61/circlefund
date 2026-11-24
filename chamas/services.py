@@ -22,7 +22,6 @@ def create_group(*, user, name, group_type, **extra):
     )
     return group
 
-
 @transaction.atomic
 def assign_role(membership, role):
     """Give a member a role, but only one that belongs to the same group."""

@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import exception_handler
 
-from .responses import APIResponse
+from .response_provider import APIResponse
 
 lgr = logging.getLogger(__name__)
 
@@ -38,4 +38,8 @@ def custom_exception_handler(exc, context):
         return APIResponse.forbidden(str(detail) if detail else "Permission denied")
     if code == 404:
         return APIResponse.not_found(str(detail) if detail else "Resource not found")
+    if code == 429:
+        return APIResponse.too_many_requests(str(detail) if detail else "Too many requests")
+    if code ==500:
+        return APIResponse.server_error(detail if detail else "Internal server error")
     return response

@@ -7,13 +7,13 @@ from common.validators import normalize_email, normalize_phone_number
 """ User model"""
 class User(BaseModel, AbstractUser):
     phone = models.CharField(max_length=16, unique=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     is_phone_verified = models.BooleanField(default=False)
     national_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     is_platform_admin = models.BooleanField(default=False)
 
-    REQUIRED_FIELDS = ["email", "phone"]
+    REQUIRED_FIELDS = [ "phone","national_id"]
 
      # save the phone numbers and emails in one standard formats to avoid mismatch on the database
 
