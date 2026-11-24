@@ -11,7 +11,7 @@ from .serializers import (
     RegisteredUserSerializer,
     RegistrationSerializer,
 )
-from .services import register_user
+from .services import AccountService
 
 
 class RegisterView(APIView):
@@ -22,8 +22,8 @@ class RegisterView(APIView):
     def post(self, request) -> Response:
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = register_user(**serializer.validated_data)
-        return APIResponse.created("User registered", RegisteredUserSerializer(user).data)
+        user = AccountService.register_user(**serializer.validated_data)
+        return APIResponse.created("User registered Successfully", RegisteredUserSerializer(user).data)
 
 
 class AccountTokenView(TokenObtainPairView):
