@@ -4,6 +4,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.test import override_settings
 from django.urls import reverse
+from django.utils.dateparse import parse_datetime
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
@@ -31,6 +32,7 @@ class RegistrationTests(APITestCase):
         response = self.client.post(self.url, self.payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
         user = User.objects.get(email="alice@example.com")
+        self.assertEqual(parse_datetime(response.data["data"]["date_created"]), user.date_created)
         self.assertEqual((user.first_name, user.last_name), ("Alice", "Kamau"))
         self.assertEqual(user.phone, "+376312345")
         self.assertNotEqual(user.password, self.payload["password"])

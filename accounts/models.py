@@ -20,6 +20,7 @@ class User(BaseModel, AbstractUser):
     profile_photo = models.ImageField(upload_to="profile_photos/", blank=True)
     pin_hash = models.CharField(max_length=128, blank=True, editable=False)
     is_platform_admin = models.BooleanField(default=False)
+    refresh_token_version = models.UUIDField(null=True, editable=False)
 
     REQUIRED_FIELDS = [ "phone","national_id"]
 
@@ -36,6 +37,23 @@ class User(BaseModel, AbstractUser):
         self.phone = normalize_phone_number(self.phone) or self.phone
         self.email = normalize_email(self.email) or None
         super().save(*args, **kwargs)
+
+
+class OTPChallenge(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    purpose = models.CharField(max_length=64)
+    recipient = models.EmailField()
+    code_hash = models.CharField(max_length=64)
+    issued_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    consumed_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(fields=("user", "purpose"), name="unique_user_otp_purpose"),
+        )
+
 
 class Permission(BaseModel):
     code = models.CharField(max_length=60, unique=True)  # e.g. "loans.approve"

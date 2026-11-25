@@ -1,7 +1,9 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
+from base.tokens import AccountRefreshToken
 from common.validators import normalize_email, validate_international_phone
 
 from .models import User
@@ -85,3 +87,23 @@ class AccountTokenSerializer(LoginSerializer):
         if "email" not in attrs and "username" not in attrs:
             raise serializers.ValidationError({"email": "Enter your email address."})
         return attrs
+
+
+class AccountTokenRefreshSerializer(TokenRefreshSerializer):
+    token_class = AccountRefreshToken
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+
+class VerifyPasswordOTPSerializer(ForgotPasswordSerializer):
+    otp = serializers.RegexField(r"\A[0-9]{6}\Z", max_length=6, write_only=True)
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    reset_token = serializers.CharField(max_length=512, write_only=True)
+    new_password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=128,
+        style={"input_type": "password"},
+    )

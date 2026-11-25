@@ -55,6 +55,7 @@ REST_FRAMEWORK = {
         "registration": env("REGISTRATION_THROTTLE_RATE", default="5/hour"),
         "login": env("LOGIN_IP_THROTTLE_RATE", default="30/min"),
         "login_account": env("LOGIN_ACCOUNT_THROTTLE_RATE", default="10/min"),
+        "password_recovery": env("PASSWORD_RECOVERY_THROTTLE_RATE", default="15/min"),
     },
     "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=None),
 
@@ -68,6 +69,14 @@ CACHES = {
         "DJANGO_CACHE_URL", default="locmemcache://circlefund",
     ),
 }
+
+if env("DJANGO_EMAIL_URL", default=""):
+    globals().update(env.email("DJANGO_EMAIL_URL"))
+elif DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_TIMEOUT = env.int("DJANGO_EMAIL_TIMEOUT", default=10)
+DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", default="Circlefund <noreply@localhost>")
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
 
 AUTH_USER_MODEL = "accounts.User"
 
@@ -118,6 +127,8 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+
+PASSWORD_RESET_TIMEOUT = 10 * 60
 
 AUTH_PASSWORD_VALIDATORS = [
     {

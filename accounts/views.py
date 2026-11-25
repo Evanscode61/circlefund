@@ -11,16 +11,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.settings import api_settings as jwt_settings
-from rest_framework_simplejwt.tokens import RefreshToken
 
+from base.tokens import AccountRefreshToken
 from common.response_provider import APIResponse
 
-from .ratelimit import LoginThrottle, RegistrationThrottle
+from .ratelimit import LoginThrottle, PasswordRecoveryThrottle, RegistrationThrottle
 from .serializers import (
     AccountTokenSerializer,
+    ForgotPasswordSerializer,
     LoginSerializer,
     RegisteredUserSerializer,
     RegistrationSerializer,
+    ResetPasswordSerializer,
+    VerifyPasswordOTPSerializer,
 )
 from .services import AccountService
 
@@ -58,7 +61,7 @@ class LoginView(GenericAPIView):
             logger.info("Account login rejected")
             raise AuthenticationFailed("Invalid email or password.")
 
-        refresh = RefreshToken.for_user(user)
+        refresh = AccountRefreshToken.for_user(user)
         if jwt_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, user)
         logger.info("Account login succeeded for user_id=%s", user.pk)
@@ -72,3 +75,43 @@ class LoginView(GenericAPIView):
 class AccountTokenView(LoginView):
     serializer_class = AccountTokenSerializer
     include_user = False
+
+
+@method_decorator(never_cache, name="dispatch")
+class PasswordRecoveryView(GenericAPIView):
+    authentication_classes = ()
+    permission_classes = (AllowAny,)
+    throttle_classes = (PasswordRecoveryThrottle,)
+
+
+class ForgotPasswordView(PasswordRecoveryView):
+    serializer_class = ForgotPasswordSerializer
+
+    def post(self, request: Request) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        AccountService.request_password_reset(**serializer.validated_data)
+        return APIResponse.success(" A password reset code has been sent, kindly check your email. ")
+
+
+class VerifyPasswordOTPView(PasswordRecoveryView):
+    serializer_class = VerifyPasswordOTPSerializer
+
+    def post(self, request: Request) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reset_token = AccountService.verify_password_reset_otp(**serializer.validated_data)
+        if reset_token is None:
+            return APIResponse.bad_request("Invalid or expired verification code.")
+        return APIResponse.success("Verification code accepted.", {"reset_token": reset_token})
+
+
+class ResetPasswordView(PasswordRecoveryView):
+    serializer_class = ResetPasswordSerializer
+
+    def post(self, request: Request) -> Response:
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not AccountService.reset_password(**serializer.validated_data):
+            return APIResponse.bad_request("Invalid or expired reset token.")
+        return APIResponse.success("Password reset successfully.")

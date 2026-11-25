@@ -44,6 +44,10 @@ class LoginThrottle(FixedWindowThrottle):
     scope = "login"
 
 
+class PasswordRecoveryThrottle(FixedWindowThrottle):
+    scope = "password_recovery"
+
+
 class LoginAccountThrottle(FixedWindowThrottle):
     scope = "login_account"
 
