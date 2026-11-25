@@ -1,4 +1,5 @@
 import math
+from collections.abc import Mapping
 
 from django.utils.crypto import salted_hmac
 from rest_framework.exceptions import Throttled
@@ -46,6 +47,18 @@ class LoginThrottle(FixedWindowThrottle):
 
 class PasswordRecoveryThrottle(FixedWindowThrottle):
     scope = "password_recovery"
+
+
+class ProfileChangeThrottle(FixedWindowThrottle):
+    scope = "profile_change"
+
+    def allow_request(self, request, view) -> bool:
+        if request.method != "PATCH" or not isinstance(request.data, Mapping) or "action" not in request.data:
+            return True
+        return super().allow_request(request, view)
+
+    def get_cache_key(self, request, view) -> str:
+        return self.cache_format % {"scope": self.scope, "ident": request.user.pk}
 
 
 class LoginAccountThrottle(FixedWindowThrottle):

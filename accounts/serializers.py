@@ -4,9 +4,15 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
 from base.tokens import AccountRefreshToken
-from common.validators import normalize_email, validate_international_phone
+from common.validators import (
+    normalize_email,
+    validate_international_phone,
+    validate_not_in_future,
+)
 
 from .models import User
+
+OTP_PATTERN = r"\A[0-9]{6}\Z"
 
 
 class RegistrationSerializer(serializers.Serializer):
@@ -98,11 +104,60 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
 
 class VerifyPasswordOTPSerializer(ForgotPasswordSerializer):
-    otp = serializers.RegexField(r"\A[0-9]{6}\Z", max_length=6, write_only=True)
+    otp = serializers.RegexField(OTP_PATTERN, max_length=6, write_only=True)
 
 
 class ResetPasswordSerializer(serializers.Serializer):
     reset_token = serializers.CharField(max_length=512, write_only=True)
+    new_password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=128,
+        style={"input_type": "password"},
+    )
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    phone_number = serializers.CharField(source="phone", read_only=True)
+    date_of_birth = serializers.DateField(
+        required=False, allow_null=True, validators=[validate_not_in_future],
+    )
+    profile_photo = serializers.ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "id", "first_name", "last_name", "date_of_birth", "gender", "profile_photo",
+            "email", "phone_number", "is_email_verified", "is_phone_verified", "date_created",
+        )
+        read_only_fields = (
+            "id", "email", "is_email_verified", "is_phone_verified", "date_created",
+        )
+
+
+class CurrentPasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(
+        write_only=True, trim_whitespace=False, max_length=4096,
+        style={"input_type": "password"},
+    )
+
+
+class ChangeEmailSerializer(CurrentPasswordSerializer):
+    email = serializers.EmailField(max_length=254)
+    otp = serializers.RegexField(OTP_PATTERN, max_length=6, write_only=True, required=False)
+
+    def validate_email(self, value: str) -> str:
+        return normalize_email(value)
+
+
+class ChangePhoneSerializer(CurrentPasswordSerializer):
+    phone_number = serializers.CharField(max_length=32)
+
+    def validate_phone_number(self, value: str) -> str:
+        return validate_international_phone(value)
+
+
+class ChangePasswordSerializer(CurrentPasswordSerializer):
     new_password = serializers.CharField(
         write_only=True, trim_whitespace=False, max_length=128,
         style={"input_type": "password"},

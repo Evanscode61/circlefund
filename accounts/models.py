@@ -21,6 +21,7 @@ class User(BaseModel, AbstractUser):
     pin_hash = models.CharField(max_length=128, blank=True, editable=False)
     is_platform_admin = models.BooleanField(default=False)
     refresh_token_version = models.UUIDField(null=True, editable=False)
+    self_deactivated_at = models.DateTimeField(null=True, editable=False)
 
     REQUIRED_FIELDS = [ "phone","national_id"]
 

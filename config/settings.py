@@ -45,7 +45,7 @@ INSTALLED_APPS = [
 ]
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'base.tokens.AccountJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -56,6 +56,7 @@ REST_FRAMEWORK = {
         "login": env("LOGIN_IP_THROTTLE_RATE", default="30/min"),
         "login_account": env("LOGIN_ACCOUNT_THROTTLE_RATE", default="10/min"),
         "password_recovery": env("PASSWORD_RECOVERY_THROTTLE_RATE", default="15/min"),
+        "profile_change": env("PROFILE_CHANGE_THROTTLE_RATE", default="15/min"),
     },
     "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=None),
 
