@@ -7,6 +7,7 @@ PERMISSIONS = {
     "roles.manage": "Create and edit roles",
     "members.invite": "Invite members",
     "members.manage": "Suspend, remove or change members' roles",
+    "members.view": "View group members",
     "contributions.view": "View contributions",
     "contributions.record": "Record contributions",
     "contributions.manage": "Set up contribution periods and rules",
@@ -23,7 +24,7 @@ PERMISSIONS = {
 DEFAULT_ROLES = {
     "Owner": "*",  # everything
     "Chairperson": [
-        "members.invite", "members.manage", "contributions.view",
+        "members.invite", "members.manage", "members.view", "contributions.view",
         "loans.approve", "payments.approve", "ledger.view", "reports.view",
     ],
     "Treasurer": [
@@ -31,7 +32,7 @@ DEFAULT_ROLES = {
         "reconciliation.manage", "payments.request", "expenses.record",
         "ledger.view", "reports.view",
     ],
-    "Secretary": ["members.invite", "contributions.view", "reports.view"],
+    "Secretary": ["members.invite", "members.view", "contributions.view", "reports.view"],
     "Member": ["contributions.view", "loans.apply"],
 }
 
@@ -56,6 +57,9 @@ def has_permission(membership, code) -> bool:
     """True if this membership is active and its role grants `code`."""
     if code not in PERMISSIONS:
         raise ValueError(f"Unknown permission: {code}")  # catches typos in views
-    if membership is None or membership.status != "active" or membership.role_id is None:
+    if (
+        membership is None or membership.status != "active" or membership.role_id is None
+        or membership.role.group_id != membership.group_id
+    ):
         return False
     return membership.role.permissions.filter(code=code).exists()

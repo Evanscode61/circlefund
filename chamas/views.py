@@ -1,13 +1,23 @@
+from uuid import UUID
+
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.access import has_permission
 from common.response_provider import APIResponse
+from utils.pagination import paginated_response
 
 from .models import Membership
-from .serializers import GroupSerializer, MembershipSerializer
-from .services import create_group
+from .serializers import (
+    GroupMemberSerializer,
+    GroupMembersQuerySerializer,
+    GroupSerializer,
+    MembershipSerializer,
+)
+from .services import create_group, list_memberships
 
 
 def membership_payload(membership) -> dict[str, object]:
@@ -48,3 +58,24 @@ class GroupDetailView(APIView):
         data = membership_payload(membership)
         data["permissions"] = sorted(membership.role.permissions.values_list("code", flat=True))
         return APIResponse.success("Group details", data)
+
+
+class GroupMembersView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request: Request, group_id: UUID) -> Response:
+        membership = get_object_or_404(
+            Membership.objects.select_related("role"),
+            group_id=group_id, user=request.user, status=Membership.Status.ACTIVE,
+        )
+        if not has_permission(membership, "members.view"):
+            return APIResponse.forbidden("You do not have permission to view group members.")
+
+        query = GroupMembersQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        memberships = list_memberships(group_id, **query.validated_data)
+        serializer = GroupMemberSerializer()
+        return paginated_response(
+            request, memberships, "results", serializer.to_representation,
+            message="Members retrieved successfully", include_count=True,
+        )

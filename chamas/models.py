@@ -117,5 +117,10 @@ class Membership(BaseModel):
             models.Index(fields=["user", "status"]),
         ]
 
+    @property
+    def group_role(self) -> Role | None:
+        role = self.role
+        return role if role is not None and role.group_id == self.group_id else None
+
     def __str__(self) -> str:
         return f"{self.user} - {self.group}"
