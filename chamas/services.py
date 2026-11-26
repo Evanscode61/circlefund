@@ -58,3 +58,14 @@ def list_memberships(
             | Q(member_number__icontains=term),
         )
     return memberships.order_by("member_number", "pk")
+
+
+@transaction.atomic
+def update_membership_notes(
+    *, group_id: UUID, membership_id: UUID, administrative_notes: str,
+) -> Membership:
+    membership = Membership.objects.select_for_update().get(pk=membership_id, group_id=group_id)
+    if membership.administrative_notes != administrative_notes:
+        membership.administrative_notes = administrative_notes
+        membership.save(update_fields=("administrative_notes", "updated_at"))
+    return membership

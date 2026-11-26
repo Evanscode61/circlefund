@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import UTC
 
 from rest_framework import serializers
@@ -49,6 +50,24 @@ class GroupMembersQuerySerializer(serializers.Serializer):
     search = serializers.CharField(required=False, allow_blank=True, max_length=200)
     status = serializers.ChoiceField(choices=Membership.Status.choices, required=False)
     role = serializers.CharField(required=False, max_length=200)
+
+
+class MembershipNotesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Membership
+        fields = ("id", "member_number", "administrative_notes", "updated_at")
+        read_only_fields = ("id", "member_number", "updated_at")
+        extra_kwargs = {"administrative_notes": {"required": True}}
+
+    def to_internal_value(self, data) -> dict[str, str]:
+        if isinstance(data, Mapping):
+            writable = {name for name, field in self.fields.items() if not field.read_only}
+            unexpected = set(data) - writable
+            if unexpected:
+                raise serializers.ValidationError({
+                    field: "This field cannot be updated here." for field in sorted(unexpected)
+                })
+        return super().to_internal_value(data)
 
 
 class GroupSerializer(serializers.ModelSerializer):
