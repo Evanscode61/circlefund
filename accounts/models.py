@@ -4,8 +4,9 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import slugify
 
-from base.models import BaseModel,GenericBaseModel
+from base.models import BaseModel, GenericBaseModel
 from common.validators import normalize_email, normalize_phone_number
 
 
@@ -72,6 +73,10 @@ class Role(GenericBaseModel):  # gives id, name, description, date_created, upda
         constraints = [
             models.UniqueConstraint(fields=["group", "name"], name="unique_role_name_per_group"),
         ]
+
+    @property
+    def code(self) -> str:
+        return slugify(self.name, allow_unicode=True) or str(self.pk)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.group})"

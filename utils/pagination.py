@@ -21,6 +21,7 @@ def paginated_response(
     payload_fn: Callable[[Item], Mapping[str, object]],
     *,
     message: str = "Results retrieved.",
+    include_count: bool = False,
 ) -> Response:
     """Serialize one page of an ordered collection into Circlefund's response format."""
     try:
@@ -44,7 +45,7 @@ def paginated_response(
             errors={"code": "invalid_pagination"},
         )
 
-    return APIResponse.success(message, data={
+    data: dict[str, object] = {
         collection_name: [payload_fn(item) for item in page_obj.object_list],
         "pagination": {
             "page": page_obj.number,
@@ -54,4 +55,7 @@ def paginated_response(
             "has_next": page_obj.has_next(),
             "has_previous": page_obj.has_previous(),
         },
-    })
+    }
+    if include_count:
+        data["count"] = paginator.count
+    return APIResponse.success(message, data=data)
