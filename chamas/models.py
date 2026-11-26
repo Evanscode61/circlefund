@@ -102,6 +102,7 @@ class Membership(BaseModel):
     joined_at = models.DateTimeField(null=True, blank=True)
     left_at = models.DateTimeField(null=True, blank=True)
     status_reason = models.TextField(blank=True)
+    administrative_notes = models.TextField(max_length=2000, blank=True, default="")
 
     class Meta:
         constraints = [
