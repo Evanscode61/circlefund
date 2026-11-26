@@ -77,6 +77,7 @@ elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_TIMEOUT = env.int("DJANGO_EMAIL_TIMEOUT", default=10)
 DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", default="Circlefund <noreply@localhost>")
+# TODO: Start Redis, set CELERY_BROKER_URL in .env, and run the worker shown in .env.example.
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
 
 AUTH_USER_MODEL = "accounts.User"
@@ -109,7 +110,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
+#TO DO : SET
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

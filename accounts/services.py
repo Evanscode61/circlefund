@@ -99,6 +99,7 @@ class AccountService:
         if not settings.CELERY_BROKER_URL:
             cls.deliver_password_reset_otp(email=email)
             return
+        # TODO: Verify forgot-password delivery with Redis and a running Celery worker.
         try:
             # Queue the request before looking up the account. The task generates the OTP.
             deliver_password_reset_otp.apply_async(kwargs={"email": email}, retry=False)
