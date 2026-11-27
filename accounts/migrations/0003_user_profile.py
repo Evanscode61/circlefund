@@ -4,30 +4,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_alter_user_email'),
+        ("accounts", "0002_alter_user_email"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='gender',
+            model_name="user",
+            name="gender",
             field=models.CharField(blank=True, max_length=50),
         ),
         migrations.AddField(
-            model_name='user',
-            name='is_email_verified',
+            model_name="user",
+            name="is_email_verified",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='user',
-            name='pin_hash',
+            model_name="user",
+            name="pin_hash",
             field=models.CharField(blank=True, editable=False, max_length=128),
         ),
         migrations.AddField(
-            model_name='user',
-            name='profile_photo',
-            field=models.ImageField(blank=True, upload_to='profile_photos/'),
+            model_name="user",
+            name="profile_photo",
+            field=models.ImageField(blank=True, upload_to="profile_photos/"),
         ),
     ]

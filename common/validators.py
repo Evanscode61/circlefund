@@ -6,6 +6,7 @@ Two layers:
   - is_valid_*  / normalize_*  : never raise, return True/False or a cleaned value
   - validate_*                 : raise DRF ValidationError, for serializer fields
 """
+
 import datetime
 import logging
 import re
@@ -32,20 +33,28 @@ MIN_MEMBER_AGE = 18
 
 # Validate Phone numbers to be used
 
+
 def normalize_phone_number(phone) -> str:
     """Return +254712345678 for 0712345678, 712345678, 254712345678 or +254712345678, else ''."""
     try:
         digits = re.sub(r"[\s()\-]", "", str(phone))
         if digits.startswith("+"):
             country_prefix = f"+{COUNTRY_CODE}"
-            return digits if (
-                digits.startswith(country_prefix)
-                and len(digits) == PHONE_LENGTH + 1
-                and digits[1:].isdigit()
-            ) else ""
+            return (
+                digits
+                if (
+                    digits.startswith(country_prefix)
+                    and len(digits) == PHONE_LENGTH + 1
+                    and digits[1:].isdigit()
+                )
+                else ""
+            )
         if digits.startswith(COUNTRY_CODE) and len(digits) == PHONE_LENGTH:
             pass
-        elif digits.startswith("0") and len(digits) - 1 + len(COUNTRY_CODE) == PHONE_LENGTH:
+        elif (
+            digits.startswith("0")
+            and len(digits) - 1 + len(COUNTRY_CODE) == PHONE_LENGTH
+        ):
             digits = COUNTRY_CODE + digits[1:]
         elif len(digits) + len(COUNTRY_CODE) == PHONE_LENGTH:
             digits = COUNTRY_CODE + digits
@@ -82,6 +91,7 @@ def normalize_international_phone_number(value) -> str:
 
 
 # Identity
+
 
 def normalize_email(email) -> str:
     try:
@@ -129,13 +139,16 @@ def is_valid_uuid4(value) -> bool:
 
 # ---------------- Money ----------------
 
+
 def normalize_amount(amount) -> Decimal | None:
     """Return a finite Decimal, or None if it can't be read."""
     try:
         if isinstance(amount, bool):
             return None
-        value = amount if isinstance(amount, Decimal) else Decimal(
-            str(amount).replace(",", "").replace(" ", "")
+        value = (
+            amount
+            if isinstance(amount, Decimal)
+            else Decimal(str(amount).replace(",", "").replace(" ", ""))
         )
         return value if value.is_finite() else None
     except Exception:
@@ -169,6 +182,7 @@ def is_valid_percentage(rate) -> bool:
 
 
 # ---------------- Dates ----------------
+
 
 def normalize_date(value) -> datetime.date | None:
     """Return a datetime.date, or None."""
@@ -226,6 +240,7 @@ def is_adult(value, min_age=MIN_MEMBER_AGE) -> bool:
 # ---------------- DRF validators (raise ValidationError) ----------------
 # The raise stays outside any try block so the error is never swallowed.
 
+
 def validate_phone(value) -> None:
     if not is_valid_phone_number(value):
         raise ValidationError("Enter a valid Kenyan phone number, e.g. +254712345678.")
@@ -235,7 +250,9 @@ def validate_international_phone(value) -> str:
     """Validate and return the canonical number for a serializer field hook."""
     phone = normalize_international_phone_number(value)
     if not phone:
-        raise ValidationError("Enter a valid international phone number starting with +.")
+        raise ValidationError(
+            "Enter a valid international phone number starting with +."
+        )
     return phone
 
 
@@ -251,7 +268,9 @@ def validate_national_id(value) -> None:
 
 def validate_person_name(value) -> None:
     if not is_valid_name(value):
-        raise ValidationError("Use letters, spaces, hyphens or apostrophes (2 to 50 characters).")
+        raise ValidationError(
+            "Use letters, spaces, hyphens or apostrophes (2 to 50 characters)."
+        )
 
 
 def validate_uuid4(value) -> None:
@@ -261,12 +280,16 @@ def validate_uuid4(value) -> None:
 
 def validate_positive_amount(value) -> None:
     if not is_valid_amount(value):
-        raise ValidationError("Amount must be greater than zero, with at most 2 decimal places.")
+        raise ValidationError(
+            "Amount must be greater than zero, with at most 2 decimal places."
+        )
 
 
 def validate_non_negative_amount(value) -> None:
     if not is_valid_amount(value, allow_zero=True):
-        raise ValidationError("Amount cannot be negative and can have at most 2 decimal places.")
+        raise ValidationError(
+            "Amount cannot be negative and can have at most 2 decimal places."
+        )
 
 
 def validate_percentage(value) -> None:

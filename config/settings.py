@@ -29,28 +29,24 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'accounts.apps.AccountsConfig',
-    'common.apps.CommonConfig',
-    'chamas.apps.ChamasConfig',
-    'utils.apps.UtilsConfig',
-    'base.apps.BaseConfig',
-    'rest_framework',
-    'django_filters',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "accounts.apps.AccountsConfig",
+    "common.apps.CommonConfig",
+    "chamas.apps.ChamasConfig",
+    "utils.apps.UtilsConfig",
+    "base.apps.BaseConfig",
+    "rest_framework",
+    "django_filters",
 ]
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'base.tokens.AccountJWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
+    "DEFAULT_AUTHENTICATION_CLASSES": ("base.tokens.AccountJWTAuthentication",),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_THROTTLE_RATES": {
         "registration": env("REGISTRATION_THROTTLE_RATE", default="5/hour"),
         "login": env("LOGIN_IP_THROTTLE_RATE", default="30/min"),
@@ -59,15 +55,14 @@ REST_FRAMEWORK = {
         "profile_change": env("PROFILE_CHANGE_THROTTLE_RATE", default="15/min"),
     },
     "NUM_PROXIES": env.int("DJANGO_NUM_PROXIES", default=None),
-
     "COERCE_DECIMAL_TO_STRING": True,
-
     "EXCEPTION_HANDLER": "common.exceptions.custom_exception_handler",
 }
 
 CACHES = {
     "default": env.cache(
-        "DJANGO_CACHE_URL", default="locmemcache://circlefund",
+        "DJANGO_CACHE_URL",
+        default="locmemcache://circlefund",
     ),
 }
 
@@ -76,41 +71,48 @@ if env("DJANGO_EMAIL_URL", default=""):
 elif DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 EMAIL_TIMEOUT = env.int("DJANGO_EMAIL_TIMEOUT", default=10)
-DEFAULT_FROM_EMAIL = env("DJANGO_DEFAULT_FROM_EMAIL", default="Circlefund <noreply@localhost>")
+DEFAULT_FROM_EMAIL = env(
+    "DJANGO_DEFAULT_FROM_EMAIL", default="Circlefund <noreply@localhost>"
+)
 # TODO: Start Redis, set CELERY_BROKER_URL in .env, and run the worker shown in .env.example.
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="")
+GROUP_INVITATION_FRONTEND_URL = env(
+    "GROUP_INVITATION_FRONTEND_URL",
+    default="https://circlefund.com/invitations",
+)
+GROUP_INVITATION_TTL_HOURS = env.int("GROUP_INVITATION_TTL_HOURS", default=168)
 
 AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'config.wsgi.application'
-#TO DO : SET
+WSGI_APPLICATION = "config.wsgi.application"
+# TO DO : SET
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -134,16 +136,16 @@ PASSWORD_RESET_TIMEOUT = 10 * 60
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -151,9 +153,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Africa/Nairobi'
+TIME_ZONE = "Africa/Nairobi"
 
 USE_I18N = True
 
@@ -163,18 +165,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_URL = "static/"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "redact_invitation_token": {"()": "utils.log_filters.RedactInvitationToken"},
+    },
     "formatters": {
         "standard": {
             "format": "{asctime} {levelname} {name}: {message}",
@@ -185,7 +190,12 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "standard",
+            "filters": ["redact_invitation_token"],
         },
+    },
+    "loggers": {
+        "django.request": {"handlers": ["console"], "propagate": False},
+        "django.server": {"handlers": ["console"], "propagate": False},
     },
     "root": {
         "handlers": ["console"],

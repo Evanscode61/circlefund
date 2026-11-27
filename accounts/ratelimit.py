@@ -53,7 +53,11 @@ class ProfileChangeThrottle(FixedWindowThrottle):
     scope = "profile_change"
 
     def allow_request(self, request, view) -> bool:
-        if request.method != "PATCH" or not isinstance(request.data, Mapping) or "action" not in request.data:
+        if (
+            request.method != "PATCH"
+            or not isinstance(request.data, Mapping)
+            or "action" not in request.data
+        ):
             return True
         return super().allow_request(request, view)
 
@@ -65,7 +69,9 @@ class LoginAccountThrottle(FixedWindowThrottle):
     scope = "login_account"
 
     def check(self, identifier: str) -> None:
-        digest = salted_hmac("accounts.login.throttle", identifier, algorithm="sha256").hexdigest()
+        digest = salted_hmac(
+            "accounts.login.throttle", identifier, algorithm="sha256"
+        ).hexdigest()
         key = self.cache_format % {"scope": self.scope, "ident": digest}
         if not self._allow_cache_key(key):
             raise Throttled(wait=self.wait())

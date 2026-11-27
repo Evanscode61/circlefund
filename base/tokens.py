@@ -21,7 +21,9 @@ class AccountJWTAuthentication(JWTAuthentication):
     def get_user(self, validated_token) -> User:
         user = super().get_user(validated_token)
         if validated_token.get(VERSION_CLAIM) != _session_version(user):
-            raise AuthenticationFailed("This session has expired. Try signing in again.")
+            raise AuthenticationFailed(
+                "This session has expired. Try signing in again."
+            )
         return user
 
 

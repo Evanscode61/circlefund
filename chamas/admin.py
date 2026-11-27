@@ -9,10 +9,24 @@ from .models import Group, Membership
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ("name", "group_type", "status", "currency", "town", "created_by", "date_created")
+    list_display = (
+        "name",
+        "group_type",
+        "status",
+        "currency",
+        "town",
+        "created_by",
+        "date_created",
+    )
     list_filter = ("group_type", "status", "currency")
     search_fields = ("name", "slug", "registration_number", "email", "phone_number")
-    readonly_fields = ("slug", "created_by", "member_number_seq", "date_created", "updated_at")
+    readonly_fields = (
+        "slug",
+        "created_by",
+        "member_number_seq",
+        "date_created",
+        "updated_at",
+    )
     list_select_related = ("created_by",)
 
     def save_model(self, request, obj, form, change) -> None:

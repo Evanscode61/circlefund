@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils.text import slugify
 
 from .models import Permission, Role
 
@@ -24,15 +25,31 @@ PERMISSIONS = {
 DEFAULT_ROLES = {
     "Owner": "*",  # everything
     "Chairperson": [
-        "members.invite", "members.manage", "members.view", "contributions.view",
-        "loans.approve", "payments.approve", "ledger.view", "reports.view",
+        "members.invite",
+        "members.manage",
+        "members.view",
+        "contributions.view",
+        "loans.approve",
+        "payments.approve",
+        "ledger.view",
+        "reports.view",
     ],
     "Treasurer": [
-        "contributions.view", "contributions.record", "contributions.manage",
-        "reconciliation.manage", "payments.request", "expenses.record",
-        "ledger.view", "reports.view",
+        "contributions.view",
+        "contributions.record",
+        "contributions.manage",
+        "reconciliation.manage",
+        "payments.request",
+        "expenses.record",
+        "ledger.view",
+        "reports.view",
     ],
-    "Secretary": ["members.invite", "members.view", "contributions.view", "reports.view"],
+    "Secretary": [
+        "members.invite",
+        "members.view",
+        "contributions.view",
+        "reports.view",
+    ],
     "Member": ["contributions.view", "loans.apply"],
 }
 
@@ -47,8 +64,12 @@ def create_default_roles(group) -> dict[str, Role]:
         )
     roles = {}
     for name, codes in DEFAULT_ROLES.items():
-        role = Role.objects.create(group=group, name=name)
-        role.permissions.set(perms.values() if codes == "*" else [perms[c] for c in codes])
+        role = Role.objects.create(
+            group=group, name=name, code=slugify(name), is_assignable=name == "Member"
+        )
+        role.permissions.set(
+            perms.values() if codes == "*" else [perms[c] for c in codes]
+        )
         roles[name] = role
     return roles
 
@@ -58,8 +79,11 @@ def has_permission(membership, code) -> bool:
     if code not in PERMISSIONS:
         raise ValueError(f"Unknown permission: {code}")  # catches typos in views
     if (
-        membership is None or membership.status != "active" or membership.role_id is None
+        membership is None
+        or membership.status != "active"
+        or membership.role_id is None
         or membership.role.group_id != membership.group_id
+        or not membership.role.is_active
     ):
         return False
     return membership.role.permissions.filter(code=code).exists()

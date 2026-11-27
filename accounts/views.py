@@ -51,7 +51,9 @@ class RegisterView(APIView):
         serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = AccountService.register_user(**serializer.validated_data)
-        return APIResponse.created("User registered Successfully", RegisteredUserSerializer(user).data)
+        return APIResponse.created(
+            "User registered Successfully", RegisteredUserSerializer(user).data
+        )
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -68,7 +70,9 @@ class LoginView(GenericAPIView):
     def post(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = AccountService.authenticate_user(request=request, **serializer.validated_data)
+        user = AccountService.authenticate_user(
+            request=request, **serializer.validated_data
+        )
         if user is None:
             logger.info("Account login rejected")
             raise AuthenticationFailed("Invalid email or password.")
@@ -78,7 +82,10 @@ class LoginView(GenericAPIView):
             update_last_login(None, user)
         logger.info("Account login succeeded for user_id=%s", user.pk)
 
-        data: dict[str, object] = {"access": str(refresh.access_token), "refresh": str(refresh)}
+        data: dict[str, object] = {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
         if self.include_user:
             data["user"] = LoginSerializer(user).data
         return Response(data)
@@ -103,7 +110,9 @@ class ForgotPasswordView(PasswordRecoveryView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         AccountService.request_password_reset(**serializer.validated_data)
-        return APIResponse.success(" If an account exists with this email, a verification code will be sent.. ")
+        return APIResponse.success(
+            " If an account exists with this email, a verification code will be sent.. "
+        )
 
 
 class VerifyPasswordOTPView(PasswordRecoveryView):
@@ -112,10 +121,14 @@ class VerifyPasswordOTPView(PasswordRecoveryView):
     def post(self, request: Request) -> Response:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        reset_token = AccountService.verify_password_reset_otp(**serializer.validated_data)
+        reset_token = AccountService.verify_password_reset_otp(
+            **serializer.validated_data
+        )
         if reset_token is None:
             return APIResponse.bad_request("Invalid or expired verification code.")
-        return APIResponse.success("Verification code accepted.", {"reset_token": reset_token})
+        return APIResponse.success(
+            "Verification code accepted.", {"reset_token": reset_token}
+        )
 
 
 class ResetPasswordView(PasswordRecoveryView):
@@ -135,7 +148,9 @@ class ProfileView(GenericAPIView):
     serializer_class = ProfileSerializer
 
     def get(self, request: Request) -> Response:
-        return APIResponse.success("Your profile", self.get_serializer(request.user).data)
+        return APIResponse.success(
+            "Your profile", self.get_serializer(request.user).data
+        )
 
 
 @method_decorator(never_cache, name="dispatch")
@@ -154,8 +169,12 @@ class ProfileUpdateView(GenericAPIView):
 
         serializer = self.get_serializer(request.user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
-        profile = AccountService.update_profile(request.user, **serializer.validated_data)
-        return APIResponse.success("Profile updated.", self.get_serializer(profile).data)
+        profile = AccountService.update_profile(
+            request.user, **serializer.validated_data
+        )
+        return APIResponse.success(
+            "Profile updated.", self.get_serializer(profile).data
+        )
 
     def _apply_action(self, request: Request, data: Mapping[str, object]) -> Response:
         actions = {
@@ -171,7 +190,12 @@ class ProfileUpdateView(GenericAPIView):
         serializer = serializer_class(data=data)
         unexpected = set(data).difference(serializer.fields, {"action"})
         if unexpected:
-            raise ValidationError({field: "This field does not apply to this action." for field in sorted(unexpected)})
+            raise ValidationError(
+                {
+                    field: "This field does not apply to this action."
+                    for field in sorted(unexpected)
+                }
+            )
         serializer.is_valid(raise_exception=True)
         return handler(request, serializer.validated_data)
 
@@ -184,11 +208,15 @@ class ProfileUpdateView(GenericAPIView):
             )
         if profile is None:
             return APIResponse.bad_request("Invalid or expired verification code.")
-        return APIResponse.success("Email updated. Sign in again.", self.get_serializer(profile).data)
+        return APIResponse.success(
+            "Email updated. Sign in again.", self.get_serializer(profile).data
+        )
 
     def _change_phone(self, request: Request, fields: dict[str, str]) -> Response:
         profile = AccountService.change_phone(request.user, **fields)
-        return APIResponse.success("Phone number updated.", self.get_serializer(profile).data)
+        return APIResponse.success(
+            "Phone number updated.", self.get_serializer(profile).data
+        )
 
     def _change_password(self, request: Request, fields: dict[str, str]) -> Response:
         AccountService.change_password(request.user, **fields)

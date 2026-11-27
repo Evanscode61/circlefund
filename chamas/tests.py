@@ -4,7 +4,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User
 from chamas.models import Group
-from chamas.services import assign_role, create_group
+from chamas.services import GroupService, MembershipService
 
 
 class CreateGroupTests(APITestCase):
@@ -16,14 +16,20 @@ class CreateGroupTests(APITestCase):
         )
 
     def test_requires_login(self) -> None:
-        response = self.client.post(self.url, {"name": "Umoja", "group_type": "chama"}, format="json")
+        response = self.client.post(
+            self.url, {"name": "Umoja", "group_type": "chama"}, format="json"
+        )
         self.assertEqual(response.status_code, 401)
 
     def test_creates_group_with_owner(self) -> None:
         self.client.force_authenticate(self.user)
         response = self.client.post(
             self.url,
-            {"name": "Umoja Women Chama", "group_type": "chama", "phone_number": "0712345678"},
+            {
+                "name": "Umoja Women Chama",
+                "group_type": "chama",
+                "phone_number": "0712345678",
+            },
             format="json",
         )
         self.assertEqual(response.status_code, 201)
@@ -46,10 +52,18 @@ class CreateGroupTests(APITestCase):
 
 class MyGroupsTests(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create_user(username="evans2", password="pass12345", phone="+254711111111")
-        self.other = User.objects.create_user(username="amina", password="pass12345", phone="+254722222222")
-        create_group(user=self.user, name="Umoja Women Chama", group_type="chama")
-        create_group(user=self.other, name="Other Group", group_type="chama")
+        self.user = User.objects.create_user(
+            username="evans2", password="pass12345", phone="+254711111111"
+        )
+        self.other = User.objects.create_user(
+            username="amina", password="pass12345", phone="+254722222222"
+        )
+        GroupService.create_group(
+            user=self.user, name="Umoja Women Chama", group_type="chama"
+        )
+        GroupService.create_group(
+            user=self.other, name="Other Group", group_type="chama"
+        )
 
     def test_lists_only_my_groups(self) -> None:
         self.client.force_authenticate(self.user)
@@ -59,8 +73,12 @@ class MyGroupsTests(APITestCase):
         self.assertEqual(slugs, ["umoja-women-chama"])
 
     def test_list_uses_one_query(self) -> None:
-        create_group(user=self.user, name="Second Group", group_type="chama")
-        create_group(user=self.user, name="Third Group", group_type="chama")
+        GroupService.create_group(
+            user=self.user, name="Second Group", group_type="chama"
+        )
+        GroupService.create_group(
+            user=self.user, name="Third Group", group_type="chama"
+        )
         self.client.force_authenticate(self.user)
         with self.assertNumQueries(1):
             self.client.get("/api/v1/groups/")
@@ -80,16 +98,26 @@ class MyGroupsTests(APITestCase):
 
 class AssignRoleTests(TestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create_user(username="evans3", password="pass12345", phone="+254733333333")
-        self.group = create_group(user=self.user, name="Group One", group_type="chama")
-        self.other = create_group(user=self.user, name="Group Two", group_type="chama")
+        self.user = User.objects.create_user(
+            username="evans3", password="pass12345", phone="+254733333333"
+        )
+        self.group = GroupService.create_group(
+            user=self.user, name="Group One", group_type="chama"
+        )
+        self.other = GroupService.create_group(
+            user=self.user, name="Group Two", group_type="chama"
+        )
         self.membership = self.group.memberships.get(user=self.user)
 
     def test_assigns_role_from_same_group(self) -> None:
-        assign_role(self.membership, self.group.roles.get(name="Treasurer"))
+        MembershipService.assign_role(
+            self.membership, self.group.roles.get(name="Treasurer")
+        )
         self.membership.refresh_from_db()
         self.assertEqual(self.membership.role.name, "Treasurer")
 
     def test_rejects_role_from_other_group(self) -> None:
         with self.assertRaises(ValidationError):
-            assign_role(self.membership, self.other.roles.get(name="Owner"))
+            MembershipService.assign_role(
+                self.membership, self.other.roles.get(name="Owner")
+            )

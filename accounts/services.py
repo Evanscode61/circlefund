@@ -18,6 +18,7 @@ from rest_framework_simplejwt.settings import api_settings as jwt_settings
 
 from base.otp import OTPService
 from base.tasks import deliver_password_reset_otp
+from chamas.models import Invitation
 from common.validators import normalize_email
 
 from .models import User
@@ -34,7 +35,10 @@ class AccountService:
 
     @staticmethod
     def authenticate_user(
-        *, request: HttpRequest | Request, password: str, email: str | None = None,
+        *,
+        request: HttpRequest | Request,
+        password: str,
+        email: str | None = None,
         username: str | None = None,
     ) -> User | None:
         email = normalize_email(email)
@@ -44,19 +48,33 @@ class AccountService:
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             user = None
         account_email = normalize_email(user.email) if user else email
-        identifier = f"email:{account_email}" if account_email else f"username:{username}"
+        identifier = (
+            f"email:{account_email}" if account_email else f"username:{username}"
+        )
         LoginAccountThrottle().check(identifier)
         if user is None:
             User().set_password(password)
             return None
-        authenticated = authenticate(request=request, username=user.get_username(), password=password)
-        if authenticated and authenticated.is_active and jwt_settings.USER_AUTHENTICATION_RULE(authenticated):
+        authenticated = authenticate(
+            request=request, username=user.get_username(), password=password
+        )
+        if (
+            authenticated
+            and authenticated.is_active
+            and jwt_settings.USER_AUTHENTICATION_RULE(authenticated)
+        ):
             return authenticated
         return None
 
     @classmethod
     def register_user(
-        cls, *, first_name: str, last_name: str, email: str, phone: str, password: str,
+        cls,
+        *,
+        first_name: str,
+        last_name: str,
+        email: str,
+        phone: str,
+        password: str,
     ) -> User:
         email = normalize_email(email)
         cls._validate_unique_contact(email, phone)
@@ -80,7 +98,10 @@ class AccountService:
 
     @staticmethod
     def _validate_unique_contact(
-        email: str | None = None, phone: str | None = None, *, exclude_user: User | None = None,
+        email: str | None = None,
+        phone: str | None = None,
+        *,
+        exclude_user: User | None = None,
     ) -> None:
         users = User.objects.all()
         if exclude_user is not None:
@@ -111,14 +132,23 @@ class AccountService:
     def deliver_password_reset_otp(cls, *, email: str) -> None:
         user = cls._lock_user_by_email(email)
         if user is not None and user.is_active:
-            cls._issue_email_code(user, cls.password_reset_purpose, user.email, "password reset")
+            cls._issue_email_code(
+                user, cls.password_reset_purpose, user.email, "password reset"
+            )
 
     @classmethod
     @transaction.atomic
     def verify_password_reset_otp(cls, *, email: str, otp: str) -> str | None:
         user = cls._lock_user_by_email(email)
-        if user is None or not user.is_active or not OTPService.verify(
-            user=user, purpose=cls.password_reset_purpose, recipient=normalize_email(user.email), code=otp,
+        if (
+            user is None
+            or not user.is_active
+            or not OTPService.verify(
+                user=user,
+                purpose=cls.password_reset_purpose,
+                recipient=normalize_email(user.email),
+                code=otp,
+            )
         ):
             return None
         return f"{user.pk}.{password_reset_tokens.make_token(user)}"
@@ -132,7 +162,9 @@ class AccountService:
         except ValueError:
             return False
 
-        user = User.objects.select_for_update().filter(pk=user_id, is_active=True).first()
+        user = (
+            User.objects.select_for_update().filter(pk=user_id, is_active=True).first()
+        )
         if user is None or not password_reset_tokens.check_token(user, proof):
             return False
         cls._set_password(user, new_password)
@@ -164,17 +196,26 @@ class AccountService:
     @classmethod
     @transaction.atomic
     def change_email(
-        cls, user: User, *, email: str, current_password: str, otp: str | None = None,
+        cls,
+        user: User,
+        *,
+        email: str,
+        current_password: str,
+        otp: str | None = None,
     ) -> User | None:
         user = cls._confirm_current_password(user, current_password)
         email = normalize_email(email)
         if email == user.email and user.is_email_verified:
-            raise ValidationError({"email": "This email address is already verified on your account."})
+            raise ValidationError(
+                {"email": "This email address is already verified on your account."}
+            )
         cls._validate_unique_contact(email=email, exclude_user=user)
         if otp is None:
             cls._issue_email_code(user, cls.email_change_purpose, email, "email change")
             return None
-        if not OTPService.verify(user=user, purpose=cls.email_change_purpose, recipient=email, code=otp):
+        if not OTPService.verify(
+            user=user, purpose=cls.email_change_purpose, recipient=email, code=otp
+        ):
             return None
 
         try:
@@ -182,16 +223,32 @@ class AccountService:
                 user.email = email
                 user.is_email_verified = True
                 user.refresh_token_version = uuid4()
-                user.save(update_fields=("email", "is_email_verified", "refresh_token_version", "updated_at"))
+                user.save(
+                    update_fields=(
+                        "email",
+                        "is_email_verified",
+                        "refresh_token_version",
+                        "updated_at",
+                    )
+                )
         except IntegrityError:
             cls._validate_unique_contact(email=email, exclude_user=user)
             raise
+        now = timezone.now()
+        Invitation.objects.filter(
+            email=email,
+            invited_user__isnull=True,
+            status=Invitation.Status.PENDING,
+            expires_at__gt=now,
+        ).update(invited_user=user, updated_at=now)
         OTPService.invalidate(user=user, purpose=cls.password_reset_purpose)
         return user
 
     @classmethod
     @transaction.atomic
-    def change_phone(cls, user: User, *, phone_number: str, current_password: str) -> User:
+    def change_phone(
+        cls, user: User, *, phone_number: str, current_password: str
+    ) -> User:
         user = cls._confirm_current_password(user, current_password)
         if phone_number == user.phone:
             return user
@@ -208,7 +265,9 @@ class AccountService:
 
     @classmethod
     @transaction.atomic
-    def change_password(cls, user: User, *, current_password: str, new_password: str) -> None:
+    def change_password(
+        cls, user: User, *, current_password: str, new_password: str
+    ) -> None:
         user = cls._confirm_current_password(user, current_password)
         cls._set_password(user, new_password)
 
@@ -219,14 +278,26 @@ class AccountService:
         user.is_active = False
         user.self_deactivated_at = timezone.now()
         user.refresh_token_version = uuid4()
-        user.save(update_fields=("is_active", "self_deactivated_at", "refresh_token_version", "updated_at"))
+        user.save(
+            update_fields=(
+                "is_active",
+                "self_deactivated_at",
+                "refresh_token_version",
+                "updated_at",
+            )
+        )
         for purpose in (cls.password_reset_purpose, cls.email_change_purpose):
             OTPService.invalidate(user=user, purpose=purpose)
 
     @staticmethod
     def _lock_active_account(user: User) -> User:
-        current = User.objects.select_for_update().filter(pk=user.pk, is_active=True).first()
-        if current is None or current.refresh_token_version != user.refresh_token_version:
+        current = (
+            User.objects.select_for_update().filter(pk=user.pk, is_active=True).first()
+        )
+        if (
+            current is None
+            or current.refresh_token_version != user.refresh_token_version
+        ):
             raise PermissionDenied("This account session is no longer active.")
         return current
 
@@ -240,15 +311,23 @@ class AccountService:
     @staticmethod
     def _lock_user_by_email(email: str) -> User | None:
         try:
-            return User.objects.select_for_update().get(email__iexact=normalize_email(email))
+            return User.objects.select_for_update().get(
+                email__iexact=normalize_email(email)
+            )
         except (User.DoesNotExist, User.MultipleObjectsReturned):
             return None
 
     @classmethod
-    def _issue_email_code(cls, user: User, purpose: str, recipient: str, action: str) -> None:
-        code = OTPService.issue(user=user, purpose=purpose, recipient=normalize_email(recipient))
+    def _issue_email_code(
+        cls, user: User, purpose: str, recipient: str, action: str
+    ) -> None:
+        code = OTPService.issue(
+            user=user, purpose=purpose, recipient=normalize_email(recipient)
+        )
         if code is not None:
-            transaction.on_commit(partial(cls._send_email_code, recipient, code, action))
+            transaction.on_commit(
+                partial(cls._send_email_code, recipient, code, action)
+            )
 
     @staticmethod
     def _send_email_code(recipient: str, code: str, action: str) -> None:

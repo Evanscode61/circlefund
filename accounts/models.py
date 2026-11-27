@@ -3,7 +3,7 @@ import re
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 
 from base.models import BaseModel, GenericBaseModel
@@ -24,7 +24,7 @@ class User(BaseModel, AbstractUser):
     refresh_token_version = models.UUIDField(null=True, editable=False)
     self_deactivated_at = models.DateTimeField(null=True, editable=False)
 
-    REQUIRED_FIELDS = [ "phone","national_id"]
+    REQUIRED_FIELDS = ["phone", "national_id"]
 
     def set_pin(self, raw_pin) -> None:
         """Hash a four- to six-digit PIN. Call save() to persist it."""
@@ -53,7 +53,9 @@ class OTPChallenge(models.Model):
 
     class Meta:
         constraints = (
-            models.UniqueConstraint(fields=("user", "purpose"), name="unique_user_otp_purpose"),
+            models.UniqueConstraint(
+                fields=("user", "purpose"), name="unique_user_otp_purpose"
+            ),
         )
 
 
@@ -66,17 +68,44 @@ class Permission(BaseModel):
 
 
 class Role(GenericBaseModel):  # gives id, name, description, date_created, updated_at
-    group = models.ForeignKey("chamas.Group", on_delete=models.PROTECT, related_name="roles")
+    group = models.ForeignKey(
+        "chamas.Group", on_delete=models.PROTECT, related_name="roles"
+    )
     permissions = models.ManyToManyField(Permission, related_name="roles", blank=True)
+    code = models.SlugField(max_length=200, allow_unicode=True, editable=False)
+    is_active = models.BooleanField(default=True)
+    is_assignable = models.BooleanField(default=False)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["group", "name"], name="unique_role_name_per_group"),
+            models.UniqueConstraint(
+                fields=["group", "name"], name="unique_role_name_per_group"
+            ),
+            models.UniqueConstraint(
+                fields=("group", "code"), name="unique_role_code_per_group"
+            ),
+            models.CheckConstraint(
+                condition=~models.Q(code=""), name="role_code_is_not_empty"
+            ),
         ]
 
-    @property
-    def code(self) -> str:
-        return slugify(self.name, allow_unicode=True) or str(self.pk)
+    def save(self, *args, **kwargs) -> None:
+        if self.code:
+            super().save(*args, **kwargs)
+            return
+        # Lock the group while allocating a code for a new custom role.
+        group_model = self._meta.get_field("group").remote_field.model
+        with transaction.atomic():
+            group_model.objects.select_for_update(no_key=True).only("pk").get(
+                pk=self.group_id
+            )
+            stem = slugify(self.name, allow_unicode=True)[:200] or str(self.pk)
+            code, suffix = stem, 2
+            while Role.objects.filter(group_id=self.group_id, code=code).exists():
+                code = f"{stem[:180]}-{suffix}"
+                suffix += 1
+            self.code = code
+            super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.group})"

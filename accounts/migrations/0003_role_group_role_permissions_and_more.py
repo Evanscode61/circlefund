@@ -5,25 +5,32 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_permission_role_alter_user_email'),
-        ('chamas', '0001_initial'),
+        ("accounts", "0002_permission_role_alter_user_email"),
+        ("chamas", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='role',
-            name='group',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='roles', to='chamas.group'),
+            model_name="role",
+            name="group",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name="roles",
+                to="chamas.group",
+            ),
         ),
         migrations.AddField(
-            model_name='role',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, related_name='roles', to='accounts.permission'),
+            model_name="role",
+            name="permissions",
+            field=models.ManyToManyField(
+                blank=True, related_name="roles", to="accounts.permission"
+            ),
         ),
         migrations.AddConstraint(
-            model_name='role',
-            constraint=models.UniqueConstraint(fields=('group', 'name'), name='unique_role_name_per_group'),
+            model_name="role",
+            constraint=models.UniqueConstraint(
+                fields=("group", "name"), name="unique_role_name_per_group"
+            ),
         ),
     ]
