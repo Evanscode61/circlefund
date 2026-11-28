@@ -1,31 +1,73 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Permission, Role,User
+
+from .models import Permission, Role, User
 
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     list_display = (
-        "username", "phone", "first_name", "last_name", "is_email_verified",
-        "is_phone_verified", "is_platform_admin", "is_active",
+        "username",
+        "phone",
+        "first_name",
+        "last_name",
+        "is_email_verified",
+        "is_phone_verified",
+        "is_platform_admin",
+        "is_active",
     )
-    list_filter = ("is_email_verified", "is_phone_verified", "is_platform_admin", "is_active", "is_staff")
-    search_fields = ("username", "phone", "first_name", "last_name", "email", "national_id")
+    list_filter = (
+        "is_email_verified",
+        "is_phone_verified",
+        "is_platform_admin",
+        "is_active",
+        "is_staff",
+    )
+    search_fields = (
+        "username",
+        "phone",
+        "first_name",
+        "last_name",
+        "email",
+        "national_id",
+    )
     ordering = ("-date_created",)
     readonly_fields = ("date_created", "updated_at", "last_login", "date_joined")
 
     fieldsets = UserAdmin.fieldsets + (
-        ("Chama profile", {"fields": (
-            "phone", "is_email_verified", "is_phone_verified", "national_id",
-            "date_of_birth", "gender", "profile_photo", "is_platform_admin",
-        )}),
+        (
+            "Chama profile",
+            {
+                "fields": (
+                    "phone",
+                    "is_email_verified",
+                    "is_phone_verified",
+                    "national_id",
+                    "date_of_birth",
+                    "gender",
+                    "profile_photo",
+                    "is_platform_admin",
+                )
+            },
+        ),
         ("Record", {"fields": ("date_created", "updated_at")}),
     )
 
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ("Chama profile", {"fields": (
-            "phone", "first_name", "last_name", "email", "date_of_birth", "gender", "profile_photo",
-        )}),
+        (
+            "Chama profile",
+            {
+                "fields": (
+                    "phone",
+                    "first_name",
+                    "last_name",
+                    "email",
+                    "date_of_birth",
+                    "gender",
+                    "profile_photo",
+                )
+            },
+        ),
     )
 
 
@@ -37,7 +79,8 @@ class PermissionAdmin(admin.ModelAdmin):
 
 @admin.register(Role)
 class RoleAdmin(admin.ModelAdmin):
-    list_display = ("name", "group")
-    list_filter = ("group",)
-    search_fields = ("name", "group__name")
+    list_display = ("name", "code", "group", "is_active", "is_assignable")
+    list_filter = ("group", "is_active", "is_assignable")
+    search_fields = ("name", "code", "group__name")
+    readonly_fields = ("code",)
     filter_horizontal = ("permissions",)

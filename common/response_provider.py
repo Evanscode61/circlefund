@@ -32,7 +32,9 @@ class APIResponse:
         return APIResponse._build(False, message, None, status.HTTP_401_UNAUTHORIZED)
 
     @staticmethod
-    def forbidden(message="You do not have permission to perform this action") -> Response:
+    def forbidden(
+        message="You do not have permission to perform this action",
+    ) -> Response:
         return APIResponse._build(False, message, None, status.HTTP_403_FORBIDDEN)
 
     @staticmethod
@@ -45,12 +47,20 @@ class APIResponse:
 
     @staticmethod
     def unprocessable(message, errors=None) -> Response:
-        return APIResponse._build(False, message, errors, status.HTTP_422_UNPROCESSABLE_ENTITY)
+        return APIResponse._build(
+            False, message, errors, status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
 
     @staticmethod
     def too_many_requests(message="Too many requests received") -> Response:
-        return APIResponse._build(False, message, None, status.HTTP_429_TOO_MANY_REQUESTS)
+        return APIResponse._build(
+            False, message, None, status.HTTP_429_TOO_MANY_REQUESTS
+        )
 
     @staticmethod
-    def server_error(message="An unexpected error occurred. Please try again later") -> Response:
-        return APIResponse._build(False, message, None, status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def server_error(
+        message="An unexpected error occurred. Please try again later",
+    ) -> Response:
+        return APIResponse._build(
+            False, message, None, status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

@@ -21,11 +21,15 @@ class RegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
     phone_number = serializers.CharField(max_length=32, source="phone")
     password = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=128,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=128,
         style={"input_type": "password"},
     )
     password_confirmation = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=128,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=128,
         style={"input_type": "password"},
     )
 
@@ -33,9 +37,12 @@ class RegistrationSerializer(serializers.Serializer):
         if isinstance(data, dict):
             unexpected = data.keys() - self.fields.keys()
             if unexpected:
-                raise serializers.ValidationError({
-                    field: "This field is not accepted." for field in sorted(unexpected)
-                })
+                raise serializers.ValidationError(
+                    {
+                        field: "This field is not accepted."
+                        for field in sorted(unexpected)
+                    }
+                )
         return super().to_internal_value(data)
 
     def validate_email(self, value) -> str:
@@ -47,9 +54,13 @@ class RegistrationSerializer(serializers.Serializer):
     def validate(self, attrs) -> dict[str, str]:
         password = attrs["password"]
         if password != attrs.pop("password_confirmation"):
-            raise serializers.ValidationError({"password_confirmation": "Passwords must match."})
+            raise serializers.ValidationError(
+                {"password_confirmation": "Passwords must match."}
+            )
         user = User(
-            first_name=attrs["first_name"], last_name=attrs["last_name"], email=attrs["email"],
+            first_name=attrs["first_name"],
+            last_name=attrs["last_name"],
+            email=attrs["email"],
         )
         try:
             validate_password(password, user=user)
@@ -64,8 +75,15 @@ class RegisteredUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            "id", "first_name", "last_name", "email", "phone_number", "is_active",
-            "is_email_verified", "is_phone_verified", "date_created",
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "is_active",
+            "is_email_verified",
+            "is_phone_verified",
+            "date_created",
         )
         read_only_fields = fields
 
@@ -75,9 +93,13 @@ class LoginSerializer(serializers.Serializer):
     first_name = serializers.CharField(read_only=True)
     last_name = serializers.CharField(read_only=True)
     email = serializers.EmailField(max_length=254)
-    email_verified = serializers.BooleanField(source="is_email_verified", read_only=True)
+    email_verified = serializers.BooleanField(
+        source="is_email_verified", read_only=True
+    )
     password = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=4096,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=4096,
         style={"input_type": "password"},
     )
 
@@ -110,7 +132,9 @@ class VerifyPasswordOTPSerializer(ForgotPasswordSerializer):
 class ResetPasswordSerializer(serializers.Serializer):
     reset_token = serializers.CharField(max_length=512, write_only=True)
     new_password = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=128,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=128,
         style={"input_type": "password"},
     )
 
@@ -120,31 +144,50 @@ class ProfileSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(max_length=150)
     phone_number = serializers.CharField(source="phone", read_only=True)
     date_of_birth = serializers.DateField(
-        required=False, allow_null=True, validators=[validate_not_in_future],
+        required=False,
+        allow_null=True,
+        validators=[validate_not_in_future],
     )
     profile_photo = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = (
-            "id", "first_name", "last_name", "date_of_birth", "gender", "profile_photo",
-            "email", "phone_number", "is_email_verified", "is_phone_verified", "date_created",
+            "id",
+            "first_name",
+            "last_name",
+            "date_of_birth",
+            "gender",
+            "profile_photo",
+            "email",
+            "phone_number",
+            "is_email_verified",
+            "is_phone_verified",
+            "date_created",
         )
         read_only_fields = (
-            "id", "email", "is_email_verified", "is_phone_verified", "date_created",
+            "id",
+            "email",
+            "is_email_verified",
+            "is_phone_verified",
+            "date_created",
         )
 
 
 class CurrentPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=4096,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=4096,
         style={"input_type": "password"},
     )
 
 
 class ChangeEmailSerializer(CurrentPasswordSerializer):
     email = serializers.EmailField(max_length=254)
-    otp = serializers.RegexField(OTP_PATTERN, max_length=6, write_only=True, required=False)
+    otp = serializers.RegexField(
+        OTP_PATTERN, max_length=6, write_only=True, required=False
+    )
 
     def validate_email(self, value: str) -> str:
         return normalize_email(value)
@@ -159,6 +202,8 @@ class ChangePhoneSerializer(CurrentPasswordSerializer):
 
 class ChangePasswordSerializer(CurrentPasswordSerializer):
     new_password = serializers.CharField(
-        write_only=True, trim_whitespace=False, max_length=128,
+        write_only=True,
+        trim_whitespace=False,
+        max_length=128,
         style={"input_type": "password"},
     )

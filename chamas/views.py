@@ -16,10 +16,12 @@ from .serializers import (
     GroupMemberSerializer,
     GroupMembersQuerySerializer,
     GroupSerializer,
+    InvitationSerializer,
+    InviteMemberSerializer,
     MembershipNotesSerializer,
     MembershipSerializer,
 )
-from .services import create_group, list_memberships, update_membership_notes
+from .services import GroupService, InvitationService, MembershipService
 
 
 def membership_payload(membership) -> dict[str, object]:
@@ -34,17 +36,25 @@ class GroupListCreateView(APIView):
 
     def get(self, request) -> Response:
         memberships = (
-            Membership.objects.filter(user=request.user, status=Membership.Status.ACTIVE)
+            Membership.objects.filter(
+                user=request.user, status=Membership.Status.ACTIVE
+            )
             .select_related("group", "role")
             .order_by("group__name")
         )
-        return APIResponse.success("Your groups", [membership_payload(m) for m in memberships])
+        return APIResponse.success(
+            "Your groups", [membership_payload(m) for m in memberships]
+        )
 
     def post(self, request) -> Response:
         serializer = GroupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        group = create_group(user=request.user, **serializer.validated_data)
-        membership = group.memberships.select_related("group", "role").get(user=request.user)
+        group = GroupService.create_group(
+            user=request.user, **serializer.validated_data
+        )
+        membership = group.memberships.select_related("group", "role").get(
+            user=request.user
+        )
         return APIResponse.created("Group created", membership_payload(membership))
 
 
@@ -55,10 +65,14 @@ class GroupDetailView(APIView):
         # non-members get a 404, so the API never confirms a group exists
         membership = get_object_or_404(
             Membership.objects.select_related("group", "role"),
-            group__slug=slug, user=request.user, status=Membership.Status.ACTIVE,
+            group__slug=slug,
+            user=request.user,
+            status=Membership.Status.ACTIVE,
         )
         data = membership_payload(membership)
-        data["permissions"] = sorted(membership.role.permissions.values_list("code", flat=True))
+        data["permissions"] = sorted(
+            membership.role.permissions.values_list("code", flat=True)
+        )
         return APIResponse.success("Group details", data)
 
 
@@ -69,11 +83,17 @@ class GroupMembersView(APIView):
     def get(self, request: Request, group_id: UUID) -> Response:
         query = GroupMembersQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
-        memberships = list_memberships(group_id, **query.validated_data)
+        memberships = MembershipService.list_memberships(
+            group_id, **query.validated_data
+        )
         serializer = GroupMemberSerializer()
         return paginated_response(
-            request, memberships, "results", serializer.to_representation,
-            message="Members retrieved successfully", include_count=True,
+            request,
+            memberships,
+            "results",
+            serializer.to_representation,
+            message="Members retrieved successfully",
+            include_count=True,
         )
 
 
@@ -85,9 +105,58 @@ class MembershipUpdateView(APIView):
         serializer = MembershipNotesSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            membership = update_membership_notes(
-                group_id=group_id, membership_id=membership_id, **serializer.validated_data,
+            membership = MembershipService.update_membership_notes(
+                group_id=group_id,
+                membership_id=membership_id,
+                **serializer.validated_data,
             )
         except Membership.DoesNotExist:
             raise NotFound("Membership not found.") from None
-        return APIResponse.success("Membership updated successfully", MembershipNotesSerializer(membership).data)
+        return APIResponse.success(
+            "Membership updated successfully",
+            MembershipNotesSerializer(membership).data,
+        )
+
+
+class InviteMemberView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @require_permission("members.invite")
+    def post(self, request: Request, group_id: UUID) -> Response:
+        serializer = InviteMemberSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = InvitationService.invite(
+            group_id=group_id, actor=request.user, **serializer.validated_data
+        )
+        return APIResponse.created(
+            "Invitation created", InvitationSerializer(invitation).data
+        )
+
+
+class AcceptInvitationView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request, token: str) -> Response:
+        membership = InvitationService.accept(token=token, actor=request.user)
+        return APIResponse.success(
+            "Invitation accepted", GroupMemberSerializer(membership).data
+        )
+
+
+class RejectInvitationView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request: Request, token: str) -> Response:
+        InvitationService.reject(token=token, actor=request.user)
+        return APIResponse.success("Invitation rejected")
+
+
+class RevokeInvitationView(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    @require_permission("members.manage")
+    def post(self, request: Request, group_id: UUID, invitation_id: UUID) -> Response:
+        InvitationService.revoke(
+            group_id=group_id, invitation_id=invitation_id, actor=request.user
+        )
+        return APIResponse.success("Invitation revoked")

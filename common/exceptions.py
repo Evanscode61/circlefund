@@ -2,13 +2,17 @@ import logging
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import exception_handler
 
 from .response_provider import APIResponse
 
 lgr = logging.getLogger(__name__)
+
+
+class InvitationConflict(APIException):
+    status_code = 409
 
 
 def custom_exception_handler(exc, context) -> Response | None:
@@ -30,7 +34,9 @@ def custom_exception_handler(exc, context) -> Response | None:
     if code == 400:
         return APIResponse.bad_request("Validation failed", data)
     if code == 401:
-        new = APIResponse.unauthorized(str(detail) if detail else "Authentication required")
+        new = APIResponse.unauthorized(
+            str(detail) if detail else "Authentication required"
+        )
         header = response.get("WWW-Authenticate")
         if header:
             new["WWW-Authenticate"] = header
@@ -39,11 +45,15 @@ def custom_exception_handler(exc, context) -> Response | None:
         return APIResponse.forbidden(str(detail) if detail else "Permission denied")
     if code == 404:
         return APIResponse.not_found(str(detail) if detail else "Resource not found")
+    if code == 409:
+        return APIResponse.conflict(str(detail) if detail else "Conflict")
     if code == 429:
-        new = APIResponse.too_many_requests(str(detail) if detail else "Too many requests")
+        new = APIResponse.too_many_requests(
+            str(detail) if detail else "Too many requests"
+        )
         if "Retry-After" in response:
             new["Retry-After"] = response["Retry-After"]
         return new
-    if code ==500:
+    if code == 500:
         return APIResponse.server_error(detail if detail else "Internal server error")
     return response

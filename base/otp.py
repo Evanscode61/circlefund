@@ -20,7 +20,9 @@ class OTPService:
     @staticmethod
     def _digest(user: User, purpose: str, recipient: str, code: str) -> str:
         return salted_hmac(
-            "accounts.otp", f"{user.pk}:{purpose}:{recipient}:{code}", algorithm="sha256",
+            "accounts.otp",
+            f"{user.pk}:{purpose}:{recipient}:{code}",
+            algorithm="sha256",
         ).hexdigest()
 
     @classmethod
@@ -28,7 +30,11 @@ class OTPService:
     def issue(cls, *, user: User, purpose: str, recipient: str) -> str | None:
         # Lock the user even when there is no challenge row to lock yet.
         User.objects.select_for_update().only("pk").get(pk=user.pk)
-        challenge = OTPChallenge.objects.select_for_update().filter(user=user, purpose=purpose).first()
+        challenge = (
+            OTPChallenge.objects.select_for_update()
+            .filter(user=user, purpose=purpose)
+            .first()
+        )
         now = timezone.now()
         if challenge is not None and now < challenge.issued_at + cls.resend_cooldown:
             return None
@@ -53,14 +59,23 @@ class OTPService:
     @classmethod
     @transaction.atomic
     def verify(cls, *, user: User, purpose: str, recipient: str, code: str) -> bool:
-        challenge = OTPChallenge.objects.select_for_update().filter(user=user, purpose=purpose).first()
+        challenge = (
+            OTPChallenge.objects.select_for_update()
+            .filter(user=user, purpose=purpose)
+            .first()
+        )
         now = timezone.now()
         if (
-            challenge is None or challenge.recipient != recipient or challenge.consumed_at is not None
-            or challenge.expires_at <= now or challenge.attempts >= cls.max_attempts
+            challenge is None
+            or challenge.recipient != recipient
+            or challenge.consumed_at is not None
+            or challenge.expires_at <= now
+            or challenge.attempts >= cls.max_attempts
         ):
             return False
-        if not constant_time_compare(challenge.code_hash, cls._digest(user, purpose, recipient, code)):
+        if not constant_time_compare(
+            challenge.code_hash, cls._digest(user, purpose, recipient, code)
+        ):
             challenge.attempts += 1
             challenge.save(update_fields=("attempts",))
             return False
@@ -70,6 +85,8 @@ class OTPService:
 
     @staticmethod
     def invalidate(*, user: User, purpose: str) -> None:
-        OTPChallenge.objects.filter(user=user, purpose=purpose, consumed_at__isnull=True).update(
+        OTPChallenge.objects.filter(
+            user=user, purpose=purpose, consumed_at__isnull=True
+        ).update(
             consumed_at=timezone.now(),
         )
